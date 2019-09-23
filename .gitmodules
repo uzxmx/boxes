@@ -1,0 +1,3 @@
+[submodule "ansible_playbooks"]
+	path = ansible_playbooks
+	url = git@github.com:uzxmx/ansible_playbooks.git

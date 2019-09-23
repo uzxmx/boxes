@@ -1,0 +1,23 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure('2') do |config|
+  config.vm.box = 'centos/7'
+
+  config.vm.provision :ansible do |ansible|
+    ansible.playbook = '../ansible_playbooks/dotfiles.yml'
+    ansible.groups = { dotfiles: ['default'] }
+    if (proxy = ENV['PROXY']) && !proxy.empty?
+      git_http_proxy = "http://#{proxy}"
+      git_https_proxy = "https://#{proxy}"
+      curl_proxy = proxy
+    end
+    ansible.extra_vars = {
+      zsh: { version: '5.7.1', chsh: true, password: 'vagrant' },
+      git_http_proxy: git_http_proxy,
+      git_https_proxy: git_https_proxy,
+      curl_proxy: curl_proxy,
+    }
+    ansible.verbose = true
+  end
+end

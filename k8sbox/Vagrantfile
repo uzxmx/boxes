@@ -55,10 +55,11 @@ def configure_ansible(node, playbook)
       end
       group_vars["#{name}:vars"] = vars
     end
+    kube_node_start_id = 1
     ansible.groups = group_vars.merge(
       'etcd' => ["#{$instance_name_prefix}-[1:#{$etcd_instances}]"],
       'kube-master' => ["#{$instance_name_prefix}-[1:#{$kube_master_instances}]"],
-      'kube-node' => ["#{$instance_name_prefix}-[1:#{$kube_node_instances}]"],
+      'kube-node' => ["#{$instance_name_prefix}-[#{kube_node_start_id}:#{$kube_node_instances}]"],
       'k8s-cluster:children' => ['kube-master', 'kube-node']
     )
   end

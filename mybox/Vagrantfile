@@ -3,6 +3,39 @@
 
 Vagrant.configure('2') do |config|
   config.vm.box = 'centos/7'
+  config.vagrant.plugins = ['vagrant-vbguest']
+  config.vbguest.auto_update = false
+
+  # When disabling inserting key, vagrant will use `~/.vagrant.d/insecure_private_key` to connect to
+  # this box, and the final packaged box will contain the corresponding public key, so new boxes created
+  # from this base box by default will have insecure pair of ssh key replaced with a new pair of ssh key.
+  # Ref: https://www.vagrantup.com/docs/vagrantfile/ssh_settings.html#config-ssh-insert_key
+  config.ssh.insert_key = false
+
+  ## Uncomment this when you want to ssh into the box using your private key.
+  ## Another way is to use agent forwarding `vagrant ssh somebox -- -A`.
+  # config.vm.provision :shell, inline: <<-SHELL
+  #   cat ~/.ssh/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys
+  # SHELL
+
+  config.vm.provision :shell, inline: <<-SHELL
+    # Allow ssh password authentication.
+    sed -i 's/^PasswordAuthentication no$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+    rm /etc/localtime && ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+    echo 'LANG=en_US.UTF-8' >/home/vagrant/.zshenv.pre.local && chown vagrant:vagrant /home/vagrant/.zshenv.pre.local
+
+    # After vbguest executes `yum install -y centos-release`, /etc/yum.repos.d/CentOS-Vault.repo
+    # will be updated. If we change the url to a mirror url before that, a new file suffixed with
+    # .rpmnew will be generated, and cause errors in later steps. To avoid errors, we execute
+    # `yum install -y centos-release` before vbguest does.
+    yum install -y centos-release
+    sed -i 's/http:\\/\\/vault.centos.org/https:\\/\\/mirrors.tuna.tsinghua.edu.cn\\/centos-vault/' /etc/yum.repos.d/CentOS-Vault.repo
+
+    # `bind-utils` provides dig.
+    # `net-tools` provides route.
+    yum install -y bind-utils net-tools tcpdump
+  SHELL
 
   config.vm.provision :ansible do |ansible|
     ansible.playbook = '../ansible_playbooks/dotfiles.yml'
@@ -14,6 +47,7 @@ Vagrant.configure('2') do |config|
     end
     ansible.extra_vars = {
       zsh: { version: '5.7.1', chsh: true, password: 'vagrant' },
+      nvim: { version: '0.3.8', install_from_source: false },
       git_http_proxy: git_http_proxy,
       git_https_proxy: git_https_proxy,
       curl_proxy: curl_proxy,

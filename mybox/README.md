@@ -2,14 +2,17 @@
 
 This box contains personal dotfiles.
 
-## Usage
+## How to build
 
-* When VM is not created, execute `vagrant up`.
+```
+# One-liner way
+make
 
-* Use `vagrant ssh` to configure VM.
+# Or you can do with several steps
+make provision
+make do_package
+make do_import
+```
 
-* Or use `vagrant provision` to configure VM.
-
-Passing parameter like `PROXY=192.168.101.101:8123` to `vagrant provision` will enable git http(s) proxy and curl proxy, so the installation will be much faster.
-
-* Run `make`, and finally a new box will be generated and added into vagrant.
+You can optionally pass an environment variable like `PROXY=192.168.101.101:8123`, this
+will enable git http(s) proxy and curl proxy, so the build will be much faster.

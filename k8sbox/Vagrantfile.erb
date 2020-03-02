@@ -12,8 +12,8 @@ $kube_master_instances = $num_instances == 1 ? $num_instances : $num_instances -
 $kube_node_instances = $num_instances
 $host_vars = {}
 
-def configure_ansible(node, playbook)
-  node.vm.provision :ansible do |ansible|
+def provision_kubespray(node, playbook)
+  node.vm.provision 'kubespray', type: 'ansible' do |ansible|
     ansible.playbook = "<%= File.join(config.ansible_playbooks_path, 'kubespray/#{playbook}') %>"
     if playbook == 'reset.yml'
       ansible.extra_vars = { reset_confirmation: 'yes' }
@@ -67,9 +67,36 @@ def configure_ansible(node, playbook)
   end
 end
 
+def provision_init(node)
+  node.vm.provision 'init', type: 'ansible' do |ansible|
+    ansible.playbook = 'init.yml'
+    ansible.host_key_checking = false
+    ansible.raw_arguments = ['--flush-cache', '-e ansible_become_pass=vagrant']
+    ansible.verbose = true
+    ansible.host_vars = $host_vars
+
+    <%- if config.zygote -%>
+    ansible.limit = "#{$instance_name_prefix}-1,localhost"
+    <%- else -%>
+    ansible.limit = 'all,localhost'
+
+    <%- if config.taint_master -%>
+    kube_node_start_id = [2, $kube_node_instances].min
+    <%- else -%>
+    kube_node_start_id = 1
+    <%- end -%>
+    ansible.groups = {
+      'kube-master' => ["#{$instance_name_prefix}-[1:#{$kube_master_instances}]"],
+      'kube-node' => ["#{$instance_name_prefix}-[#{kube_node_start_id}:#{$kube_node_instances}]"]
+    }
+    <%- end -%>
+  end
+end
+
 Vagrant.configure('2') do |config|
   <%- if config.zygote -%>
   config.vm.box = 'uzxmx/mybox'
+  config.ssh.insert_key = false
   <%- else -%>
   config.vm.box = 'uzxmx/k8s'
   <%- end -%>
@@ -91,9 +118,10 @@ Vagrant.configure('2') do |config|
 
       # Only execute the Ansible provisioner once, when all the machines are up and ready.
       if i == $num_instances
-        configure_ansible(node, 'cluster.yml')
+        provision_kubespray(node, 'cluster.yml')
+        provision_init(node)
         <%- if config.zygote -%>
-        configure_ansible(node, 'reset.yml')
+        provision_kubespray(node, 'reset.yml')
         <%- end -%>
       end
     end

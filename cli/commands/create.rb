@@ -31,7 +31,14 @@ module Commands
 
       template = ERB.new(File.read(erb_template_path), trim_mode: '-')
       content = template.result(binding)
-      dry_run or File.open(File.join(@project_dir, 'Vagrantfile'), 'w') { |io| io << content }
+      if !dry_run
+        File.open(File.join(@project_dir, 'Vagrantfile'), 'w') { |io| io << content }
+        if File.directory?(templates_dir)
+          FileUtils.cp_r File.join(templates_dir, '.'), @project_dir
+        end
+      end
+
+      post_setup
 
       puts 'Successfully created a project.'
     end
@@ -50,7 +57,14 @@ module Commands
       path
     end
 
+    def templates_dir
+      File.join(box_dir, 'templates')
+    end
+
     def populate_config
+    end
+
+    def post_setup
     end
   end
 end

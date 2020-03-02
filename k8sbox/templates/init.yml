@@ -1,0 +1,4 @@
+- hosts: kube-master
+  become: yes
+  tasks:
+    - shell: cp -R /root/.kube /home/vagrant && chown -R vagrant:vagrant /home/vagrant/.kube

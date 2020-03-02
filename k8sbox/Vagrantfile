@@ -14,8 +14,8 @@ $kube_master_instances = $num_instances == 1 ? $num_instances : $num_instances -
 $kube_node_instances = $num_instances
 $host_vars = {}
 
-def configure_ansible(node, playbook)
-  node.vm.provision :ansible do |ansible|
+def provision_kubespray(node, playbook)
+  node.vm.provision 'kubespray', type: 'ansible' do |ansible|
     ansible.playbook = "../ansible_playbooks/kubespray/#{playbook}"
     if playbook == 'reset.yml'
       ansible.extra_vars = { reset_confirmation: 'yes' }
@@ -65,8 +65,26 @@ def configure_ansible(node, playbook)
   end
 end
 
+def provision_init(node)
+  node.vm.provision 'init', type: 'ansible' do |ansible|
+    ansible.playbook = 'init.yml'
+    ansible.limit = 'all,localhost'
+    ansible.host_key_checking = false
+    ansible.raw_arguments = ['--flush-cache', '-e ansible_become_pass=vagrant']
+    ansible.verbose = true
+    ansible.host_vars = $host_vars
+
+    kube_node_start_id = 1
+    ansible.groups = {
+      'kube-master' => ["#{$instance_name_prefix}-[1:#{$kube_master_instances}]"],
+      'kube-node' => ["#{$instance_name_prefix}-[#{kube_node_start_id}:#{$kube_node_instances}]"]
+    }
+  end
+end
+
 Vagrant.configure('2') do |config|
   config.vm.box = 'uzxmx/mybox'
+  config.ssh.insert_key = false
 
   (1..$num_instances).each do |i|
     config.vm.define vm_name = "%s-%01d" % [$instance_name_prefix, i] do |node|
@@ -85,8 +103,8 @@ Vagrant.configure('2') do |config|
 
       # Only execute the Ansible provisioner once, when all the machines are up and ready.
       if i == $num_instances
-        configure_ansible(node, 'cluster.yml')
-        configure_ansible(node, 'reset.yml')
+        provision_kubespray(node, 'cluster.yml')
+        provision_kubespray(node, 'reset.yml')
       end
     end
   end

@@ -1,0 +1,5 @@
+- hosts: k8s-1
+  become: yes
+  tasks:
+    - name: Append vagrant to docker group
+      shell: usermod -a -G docker vagrant

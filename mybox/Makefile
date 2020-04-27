@@ -3,9 +3,11 @@ all: import
 provision:
 	vagrant up --no-provision
 	vagrant provision --provision-with shell
-	(vagrant vbguest --status | grep 'No Virtualbox Guest Additions installation found.$$' &>/dev/null && vagrant vbguest --do install) || true
-	vagrant vbguest --status | grep -v 'No Virtualbox Guest Additions installation found.$$' &>/dev/null
+	ansible-galaxy install -r ../ansible_playbooks/requirements.yml
 	PROXY=$(PROXY) vagrant provision
+
+install_guest_additions:
+	(vagrant vbguest --status | grep 'No Virtualbox Guest Additions installation found.$$' && vagrant vbguest --do install) || true
 
 define package
 	vagrant ssh -c "sudo rm -rf /tmp/*; cat /dev/null>~/.zsh_history" && vagrant halt
@@ -16,6 +18,7 @@ do_package:
 	$(package)
 
 package: provision
+	$(MAKE) install_guest_additions
 	$(package)
 
 define import
@@ -31,4 +34,4 @@ import: package
 clean:
 	rm my.box
 
-.PHONY: all provision do_package package do_import import clean
+.PHONY: all provision install_guest_additions do_package package do_import import clean

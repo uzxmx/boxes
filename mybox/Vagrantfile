@@ -2,7 +2,14 @@
 # vi: set ft=ruby :
 
 Vagrant.configure('2') do |config|
+  # Depend on Centos 7.6.1810
   config.vm.box = 'centos/7'
+
+  config.vm.provider :virtualbox do |vb|
+    vb.memory = 2048
+    vb.cpus = 4
+  end
+
   config.vagrant.plugins = ['vagrant-vbguest']
   config.vbguest.auto_update = false
 
@@ -11,6 +18,7 @@ Vagrant.configure('2') do |config|
   # from this base box by default will have insecure pair of ssh key replaced with a new pair of ssh key.
   # Ref: https://www.vagrantup.com/docs/vagrantfile/ssh_settings.html#config-ssh-insert_key
   config.ssh.insert_key = false
+  config.ssh.forward_agent = true
 
   ## Uncomment this when you want to ssh into the box using your private key.
   ## Another way is to use agent forwarding `vagrant ssh somebox -- -A`.
@@ -23,18 +31,7 @@ Vagrant.configure('2') do |config|
     sed -i 's/^PasswordAuthentication no$/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
     rm /etc/localtime && ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-    echo 'LANG=en_US.UTF-8' >/home/vagrant/.zshenv.pre.local && chown vagrant:vagrant /home/vagrant/.zshenv.pre.local
-
-    # After vbguest executes `yum install -y centos-release`, /etc/yum.repos.d/CentOS-Vault.repo
-    # will be updated. If we change the url to a mirror url before that, a new file suffixed with
-    # .rpmnew will be generated, and cause errors in later steps. To avoid errors, we execute
-    # `yum install -y centos-release` before vbguest does.
-    yum install -y centos-release
-    sed -i 's/http:\\/\\/vault.centos.org/https:\\/\\/mirrors.tuna.tsinghua.edu.cn\\/centos-vault/' /etc/yum.repos.d/CentOS-Vault.repo
-
-    # `bind-utils` provides dig.
-    # `net-tools` provides route.
-    yum install -y bind-utils net-tools tcpdump
+    echo 'export LANG=en_US.UTF-8' >/home/vagrant/.zshenv.pre.local && chown vagrant:vagrant /home/vagrant/.zshenv.pre.local
   SHELL
 
   config.vm.provision :ansible do |ansible|
@@ -46,12 +43,15 @@ Vagrant.configure('2') do |config|
       curl_proxy = proxy
     end
     ansible.extra_vars = {
-      zsh: { version: '5.7.1', chsh: true, password: 'vagrant' },
+      zsh: { version: '5.8', chsh: true, password: 'vagrant' },
       nvim: { version: '0.3.8', install_from_source: false },
       git_http_proxy: git_http_proxy,
       git_https_proxy: git_https_proxy,
       curl_proxy: curl_proxy,
     }
     ansible.verbose = true
+    if (tags = ENV['TAGS']) && !tags.empty?
+      ansible.tags = tags
+    end
   end
 end

@@ -8,7 +8,6 @@ require 'erb'
 
 config = Hashie::Mash.new
 config.zygote = true
-config.ansible_playbooks_path = '../ansible_playbooks'
 config.subnet = '172.17.8'
 template = ERB.new(File.read(File.expand_path('../Vagrantfile.erb', __FILE__)), trim_mode: '-')
 File.open(File.expand_path('../Vagrantfile', __FILE__), 'w') do |io|

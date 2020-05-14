@@ -1,5 +1,8 @@
-require 'commands/base'
 require 'erb'
+require 'fileutils'
+require 'pathname'
+
+require 'commands/base'
 
 module Commands
   class Create < Base
@@ -34,7 +37,7 @@ module Commands
       if !dry_run
         File.open(File.join(@project_dir, 'Vagrantfile'), 'w') { |io| io << content }
         if File.directory?(templates_dir)
-          FileUtils.cp_r File.join(templates_dir, '.'), @project_dir
+          cp_r templates_dir, @project_dir
         end
       end
 
@@ -47,6 +50,21 @@ module Commands
 
     def dry_run
       options[:dry_run]
+    end
+
+    # Enhance `FileUtils.cp_r` with following symlink.
+    def cp_r(src, dest)
+      Dir[File.join(src, '**/*')].each do |path|
+        dest_path = File.join(dest, Pathname.new(path).relative_path_from(src))
+
+        if File.directory? path
+          FileUtils.mkdir_p dest_path
+          next
+        elsif File.symlink? path
+          path = File.realpath(path)
+        end
+        FileUtils.cp(path, dest_path)
+      end
     end
 
     def erb_template_path

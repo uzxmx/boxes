@@ -1,6 +1,11 @@
 # k8sbox
 
-This box help setup kubernetes cluster quickly by pre-installing dependent components.
+This box help setup kubernetes cluster quickly by pre-installing dependent components. It
+uses [kubespray](https://github.com/kubernetes-sigs/kubespray) to deploy a cluster. The
+installed kubernetes cluster version is 1.16.7 with below components:
+
+* [calico v3.7.3](https://github.com/projectcalico/calicoctl)
+* [helm v3.1.1](https://github.com/helm/helm)
 
 ## How to build
 

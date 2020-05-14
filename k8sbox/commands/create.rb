@@ -4,11 +4,15 @@ class Create < Commands::Create
     config.instance_name_prefix = prompt.ask('Instance name prefix:', default: 'k8s')
     config.subnet = prompt.ask('Cluster subnet (e.g. 172.17.9):', value: '172.17.', required: true)
     config.taint_master = prompt.yes?('Taint master (pods will not be scheduled to master)?', default: false)
-
-    config.ansible_playbooks_path = 'ansible_playbooks'
   end
 
   def post_setup
-    dry_run or system("sh -c 'cd #{@project_name} && git submodule add https://github.com/uzxmx/ansible_playbooks.git && cd ansible_playbooks && git submodule update --init --recursive'")
+    kubespray_version = File.read(File.join(box_dir, '.kubespray_version')).strip
+    dry_run or system <<-EOF
+      sh -c 'cd #{@project_name} && \
+        git submodule add https://github.com/kubernetes-sigs/kubespray.git && \
+        cd kubespray && git checkout -b "#{kubespray_version}" "#{kubespray_version}" \
+      '
+    EOF
   end
 end

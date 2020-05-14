@@ -15,10 +15,12 @@ $kube_node_instances = $num_instances
 $host_vars = {}
 
 def provision_kubespray(node, playbook)
-  node.vm.provision 'kubespray', type: 'ansible' do |ansible|
-    ansible.playbook = "../ansible_playbooks/kubespray/#{playbook}"
+  node.vm.provision "kubespray#{playbook == 'reset.yml' ? '_reset' : ''}", type: 'ansible' do |ansible|
+    ansible.playbook = File.expand_path("../kubespray/#{playbook}", __FILE__)
+
+    ansible.extra_vars = YAML.load(File.read(File.expand_path('../kubespray_extra_vars.yml', __FILE__)))
     if playbook == 'reset.yml'
-      ansible.extra_vars = { reset_confirmation: 'yes' }
+      ansible.extra_vars[:reset_confirmation] = 'yes'
     end
 
     ansible.limit = 'all,localhost'
@@ -29,7 +31,7 @@ def provision_kubespray(node, playbook)
     ansible.host_vars = $host_vars
 
     group_vars = {}
-    Dir['../ansible_playbooks/kubespray_inventory/local/group_vars/*'].each do |path|
+    Dir[File.expand_path('../kubespray/inventory/local/group_vars/*', __FILE__)].each do |path|
       name = File.basename(path, '.*')
       if File.directory?(path)
         config_paths = Dir[File.join(path, '*.{yml,yaml,json}')].to_a
@@ -68,17 +70,12 @@ end
 def provision_init(node)
   node.vm.provision 'init', type: 'ansible' do |ansible|
     ansible.playbook = 'init.yml'
-    ansible.limit = 'all,localhost'
     ansible.host_key_checking = false
     ansible.raw_arguments = ['--flush-cache', '-e ansible_become_pass=vagrant']
     ansible.verbose = true
     ansible.host_vars = $host_vars
 
-    kube_node_start_id = 1
-    ansible.groups = {
-      'kube-master' => ["#{$instance_name_prefix}-[1:#{$kube_master_instances}]"],
-      'kube-node' => ["#{$instance_name_prefix}-[#{kube_node_start_id}:#{$kube_node_instances}]"]
-    }
+    ansible.limit = "#{$instance_name_prefix}-1,localhost"
   end
 end
 
@@ -104,6 +101,7 @@ Vagrant.configure('2') do |config|
       # Only execute the Ansible provisioner once, when all the machines are up and ready.
       if i == $num_instances
         provision_kubespray(node, 'cluster.yml')
+        provision_init(node)
         provision_kubespray(node, 'reset.yml')
       end
     end

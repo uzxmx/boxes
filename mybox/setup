@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+while getopts 'p:' opt; do
+  case "$opt" in
+    p)
+      user_http_proxy="$OPTARG"
+      ;;
+  esac
+done
+
+setup_script=~/.dotfiles/scripts/bootstrap/setup
+if [ -e "$setup_script" ]; then
+  USE_LOCAL=1 PROXY="$user_http_proxy" "$setup_script"
+else
+  curl -s https://raw.githubusercontent.com/uzxmx/dotfiles/master/scripts/bootstrap/setup | \
+    GIT_CLONE_WITH_SSH=0 \
+    PROXY="$user_http_proxy" \
+    bash
+fi
+
+# Allow ssh password authentication.
+sudo sed -i 's/^PasswordAuthentication no$/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+sudo rm /etc/localtime && sudo ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+echo 'export LANG=en_US.UTF-8' >~/.zshenv.pre.local

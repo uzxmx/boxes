@@ -2,8 +2,6 @@ all: import
 
 provision:
 	vagrant up --no-provision
-	vagrant provision --provision-with shell
-	ansible-galaxy install -r ../ansible_playbooks/requirements.yml
 	PROXY=$(PROXY) vagrant provision
 
 install_guest_additions:

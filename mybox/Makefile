@@ -2,7 +2,7 @@ all: import
 
 provision:
 	vagrant up --no-provision
-	PROXY=$(PROXY) vagrant provision
+	vagrant provision
 
 install_guest_additions:
 	(vagrant vbguest --status | grep 'No Virtualbox Guest Additions installation found.$$' && vagrant vbguest --do install) || true

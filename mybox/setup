@@ -2,22 +2,89 @@
 
 set -eo pipefail
 
-while getopts 'p:' opt; do
-  case "$opt" in
-    p)
-      user_http_proxy="$OPTARG"
+usage() {
+  cat <<-EOF
+Utility to setup dotfiles repository in current system.
+
+Options:
+  -p, --proxy <proxy> http proxy
+  -v, --verbose show verbose output
+EOF
+  exit 1
+}
+
+setup_args=()
+
+if [ -n "$SETUP_PROXY" ]; then
+  user_http_proxy="$SETUP_PROXY"
+fi
+
+if [ "$SETUP_VERBOSE" = "1" ]; then
+  verbose=1
+fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -p | --proxy)
+      shift
+      user_http_proxy="$1"
+      ;;
+    -v | --verbose)
+      verbose=1
       ;;
   esac
+  shift
 done
+
+if [ ! "$SETUP_PASS_COMMON_OPTS" = "0" ]; then
+  if [ -n "$user_http_proxy" ]; then
+    setup_args+=("-p" "$user_http_proxy")
+  fi
+  if [ "$verbose" = "1" ]; then
+    setup_args+=("-v")
+  fi
+fi
+
+SETUP_EXTRA_OPTS="${SETUP_EXTRA_OPTS:-"--type full --update-repo"}"
+if [ -n "$SETUP_EXTRA_OPTS" ]; then
+  eval "setup_args+=($SETUP_EXTRA_OPTS)"
+fi
+
+run() {
+  if [ "$verbose" = "1" ]; then
+    echo "Run: $@" >&2
+  fi
+  eval "$@"
+}
+
+run_with_proxy() {
+  if [ -n "$user_http_proxy" ]; then
+    export http_proxy=http://$user_http_proxy
+    export HTTP_PROXY=http://$user_http_proxy
+    export https_proxy=http://$user_http_proxy
+    export HTTPS_PROXY=http://$user_http_proxy
+  fi
+
+  run "$@"
+
+  if [ -n "$user_http_proxy" ]; then
+    unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
+  fi
+}
 
 setup_script=~/.dotfiles/scripts/bootstrap/setup
 if [ -e "$setup_script" ]; then
-  USE_LOCAL=1 PROXY="$user_http_proxy" "$setup_script"
+  run "$setup_script" "${setup_args[@]}"
 else
-  curl -s https://raw.githubusercontent.com/uzxmx/dotfiles/master/scripts/bootstrap/setup | \
-    GIT_CLONE_WITH_SSH=0 \
-    PROXY="$user_http_proxy" \
-    bash
+  tmpfile="$(mktemp)"
+  handle_exit() {
+    [ -e "$tmpfile" ] && rm "$tmpfile"
+  }
+  trap handle_exit EXIT
+  run_with_proxy curl -o "$tmpfile" https://raw.githubusercontent.com/uzxmx/dotfiles/master/scripts/bootstrap/setup
+  export GIT_CLONE_WITH_SSH=0
+  run bash "$tmpfile" "${setup_args[@]}"
+  unset GIT_CLONE_WITH_SSH
 fi
 
 # Allow ssh password authentication.

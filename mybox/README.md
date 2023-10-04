@@ -10,6 +10,7 @@ make
 
 # Or you can do with several steps
 make provision
+# TODO
 make install_guest_additions
 make do_package
 make do_import

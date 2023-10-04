@@ -1,9 +1,10 @@
 docker_rh_repo_base_url: "https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/7/$basearch/stable"
 docker_rh_repo_gpgkey: "https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/centos/gpg"
 
-gcr_image_repo: "gcr.azk8s.cn"
-docker_image_repo: "dockerhub.azk8s.cn"
-quay_image_repo: "quay.azk8s.cn"
+# kube_image_repo: "gcr.mirrors.ustc.edu.cn/google-containers"
+gcr_image_repo: "gcr.mirrors.ustc.edu.cn"
+docker_image_repo: "docker.mirrors.ustc.edu.cn"
+quay_image_repo: "quay.mirrors.ustc.edu.cn"
 
 kube_proxy_mode: "iptables"
 
@@ -14,3 +15,19 @@ credentials_dir: "tmp"
 
 helm_enabled: true
 helm_version: "v3.1.1"
+helm_archive_checksums:
+  amd64:
+    v3.1.1: cdd7ad304e2615c583dde0ffb0cb38fc1336cd7ce8ff3b5f237434dcadb28c98
+
+kubelet_download_url: "https://storage.googleapis.com.cnpmjs.org/kubernetes-release/release/{{ kube_version }}/bin/linux/{{ image_arch }}/kubelet"
+kubectl_download_url: "https://storage.googleapis.com.cnpmjs.org/kubernetes-release/release/{{ kube_version }}/bin/linux/{{ image_arch }}/kubectl"
+kubeadm_download_url: "https://storage.googleapis.com.cnpmjs.org/kubernetes-release/release/{{ kubeadm_version }}/bin/linux/{{ image_arch }}/kubeadm"
+# etcd_download_url: "https://github.com/coreos/etcd/releases/download/{{ etcd_version }}/etcd-{{ etcd_version }}-linux-{{ image_arch }}.tar.gz"
+cni_download_url: "https://mirror.azure.cn/kubernetes/containernetworking-plugins/cni-plugins-linux-{{ image_arch }}-{{ cni_version }}.tgz"
+# calicoctl_download_url: "https://github.com/projectcalico/calicoctl/releases/download/{{ calico_ctl_version }}/calicoctl-linux-{{ image_arch }}"
+# calico_crds_download_url: "https://github.com/projectcalico/calico/archive/{{ calico_version }}.tar.gz"
+# crictl_download_url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/{{ crictl_version }}/crictl-{{ crictl_version }}-{{ ansible_system | lower }}-{{ image_arch }}.tar.gz"
+# helm_download_url: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ image_arch }}.tar.gz"
+
+download_run_once: true
+download_force_cache: true

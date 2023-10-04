@@ -20,3 +20,12 @@ make provision
 make do_package
 make do_import
 ```
+
+### Supported environment variables
+
+When calling `make`, you can set below environment variables.
+
+* PROXY
+
+  The specified proxy should be an HTTP proxy, which is supported by kubespray.
+  E.g. PROXY=10.0.2.2:8125

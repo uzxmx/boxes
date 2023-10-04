@@ -13,7 +13,7 @@ EOF
   exit 1
 }
 
-setup_args=()
+setup_args=(--git-ssh)
 
 if [ -n "$SETUP_PROXY" ]; then
   user_http_proxy="$SETUP_PROXY"

@@ -1,0 +1,19 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure('2') do |config|
+  config.vm.box = 'uzxmx/my'
+
+  config.vm.provider :virtualbox do |vb|
+    # vb.gui = true
+  end
+
+  config.vm.provision :shell, inline: <<-SHELL
+    yum group install -y "GNOME Desktop"
+    # Always go into GUI mode after startup.
+    systemctl set-default graphical.target
+    yum install -y kernel-devel
+    # We may need to install vbadditions again.
+    # sudo sh ./VBoxLinuxAdditions.run
+  SHELL
+end

@@ -21,6 +21,12 @@ def provision_kubespray(node, playbook)
       ansible.extra_vars[:reset_confirmation] = 'yes'
     end
 
+    if !(proxy = ENV['PROXY']).nil?
+      proxy = proxy =~ /^https?:\/\/.*/ ? proxy : "http://#{proxy}"
+      ansible.extra_vars[:http_proxy] = proxy
+      ansible.extra_vars[:https_proxy] = proxy
+    end
+
     ansible.limit = 'all,localhost'
     ansible.host_key_checking = false
     ansible.raw_arguments = ["--forks=#{$num_instances}", '--flush-cache', '-e ansible_become_pass=vagrant']
